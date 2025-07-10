@@ -9,6 +9,9 @@ from transformers import (
 )
 import io
 
+from huggingface_hub import login
+login("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")
+
 # Set device
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32
