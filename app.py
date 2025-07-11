@@ -10,7 +10,7 @@ from transformers import (
 )
 from huggingface_hub import login, HfFolder
 # Set your new token here
-HF_TOKEN = "hf_your_new_token_here"  # Replace with your actual token
+HF_TOKEN = "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"  # Replace with your actual token
 
 # Proper authentication
 try:
