@@ -26,34 +26,30 @@ def load_blip():
 @st.cache_resource
 def load_llama_guard():
     model_id = "meta-llama/Meta-Llama-Guard-2-8B"
-    hf_token = "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"
-
+    token = "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"
+    
     tokenizer = AutoTokenizer.from_pretrained(
         model_id,
-        use_fast=False,  # safer for LLaMA models
-        token=hf_token,
-        trust_remote_code=True
+        use_fast=True,
+        use_auth_token=token  # ✅ use_auth_token, not token
     )
-
+    
     config = AutoModelForCausalLM.from_pretrained(
         model_id,
-        token=hf_token,
-        trust_remote_code=True
+        trust_remote_code=True,
+        use_auth_token=token
     ).config
-
-    # Patch rope_scaling if necessary
+    
     if not hasattr(config, "rope_scaling"):
         config.rope_scaling = None
-
+    
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         config=config,
         torch_dtype=torch.float16,
         device_map="auto",
-        token=hf_token,
-        trust_remote_code=True
+        use_auth_token=token
     )
-
     return tokenizer, model
 
 
