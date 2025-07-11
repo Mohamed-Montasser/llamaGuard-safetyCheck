@@ -7,3 +7,5 @@ accelerate>=0.21.0
 together
 onnxruntime
 scikit-learn
+joblib>=1.2
+requests
