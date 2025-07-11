@@ -8,11 +8,17 @@ from transformers import (
     AutoModelForCausalLM,
     AutoConfig
 )
-from huggingface_hub import login
+from huggingface_hub import login, HfFolder
+# Set your new token here
+HF_TOKEN = "hf_your_new_token_here"  # Replace with your actual token
 
-# Initialize Hugging Face login
-login(token="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")
-
+# Proper authentication
+try:
+    login(token=HF_TOKEN, add_to_git_credential=False)
+    HfFolder.save_token(HF_TOKEN)  # Persist token
+except Exception as e:
+    st.error(f"Authentication failed: {str(e)}")
+    st.stop()
 # Set device
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
@@ -32,43 +38,28 @@ def load_blip():
 def load_llama_guard():
     model_id = "meta-llama/Llama-Guard-3-8B"
     
-    # Load config and simplify rope_scaling
-    config = AutoConfig.from_pretrained(model_id, token=True)
-    
-    if hasattr(config, "rope_scaling"):
-        # Convert Llama 3's extended rope_scaling to basic format
-        config.rope_scaling = {
-            "type": config.rope_scaling.get("rope_type", "linear"),
-            "factor": config.rope_scaling.get("factor", 1.0)
-        }
-        # Remove incompatible attributes
-        for attr in ['low_freq_factor', 'high_freq_factor', 
-                    'original_max_position_embeddings']:
-            if hasattr(config.rope_scaling, attr):
-                delattr(config.rope_scaling, attr)
-    
-    # Load tokenizer with chat template
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_id,
-        token=True,
-        use_fast=True
-    )
-    
-    # Load model with cleaned config
-    model = AutoModelForCausalLM.from_pretrained(
-        model_id,
-        config=config,
-        torch_dtype=torch.float16,
-        device_map="auto",
-        token=True
-    )
-    
-    # Ensure proper tokenizer settings
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-    model.config.pad_token_id = tokenizer.pad_token_id
-    
-    return tokenizer, model
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_id,
+            token=HF_TOKEN,
+            use_fast=True
+        )
+        
+        model = AutoModelForCausalLM.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16,
+            device_map="auto",
+            token=HF_TOKEN
+        )
+        
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+            
+        return tokenizer, model
+        
+    except Exception as e:
+        st.error(f"Model loading failed: {str(e)}")
+        st.stop()
 
 # Captioning function
 def generate_caption(image, processor, model):
