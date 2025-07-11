@@ -3,6 +3,7 @@ from PIL import Image
 import torch
 from transformers import BlipProcessor, BlipForConditionalGeneration
 from together import Together
+import os
 
 # 🔐 Together.ai API key (set securely in your env, not hardcoded)
 #TOGETHER_API_KEY = "08e51872d0f3ce01af96b278da8f1f7757e485f71237501ecf42e8cab4661bb8"  # Replace this with your real key
