@@ -99,7 +99,14 @@ if uploaded_file:
         caption = generate_caption(image, processor, caption_model)
         st.success(f"📋 Caption: {caption}")
         result = moderate_text_with_together(caption)
-        st.warning(f"🛡️ Moderation Result: {result}")
+        #st.warning(f"🛡️ Moderation Result: {result}")
+        if "unsafe" in result.lower():
+            st.warning(f"🛡️ Moderation Result: {result}")
+        else:
+            st.warning(f"🛡️ Moderation Result: {result}")
+            st.success("✅ Text marked safe by LLaMA Guard")
+            label = verify_with_distilbert(text_input)
+            st.info(f"🔁 DistilBERT verification: {label}")
 
 # Manual Text Input
 st.subheader("✍️ Or Enter Your Own Text")
