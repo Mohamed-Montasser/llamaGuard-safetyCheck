@@ -28,8 +28,6 @@ session = ort.InferenceSession(model_path)
 label_encoder = joblib.load(encoder_path)
 
 
-# 🔐 Together.ai API key (set securely in your env, not hardcoded)
-#TOGETHER_API_KEY = "08e51872d0f3ce01af96b278da8f1f7757e485f71237501ecf42e8cab4661bb8"  # Replace this with your real key
 os.environ["TOGETHER_API_KEY"] = st.secrets["TOGETHER_API_KEY"]
 # Initialize Together.ai client
 client = Together()# Set device
@@ -81,7 +79,7 @@ def verify_with_distilbert(text):
     return label
 
 
-# ───────────── Streamlit UI ─────────────
+#  Streamlit UI 
 st.set_page_config(page_title="Caption + Moderation", layout="centered")
 st.title("🖼️ Image Captioning + 🛡️ Moderation with Together.ai")
 
@@ -99,7 +97,6 @@ if uploaded_file:
         caption = generate_caption(image, processor, caption_model)
         st.success(f"📋 Caption: {caption}")
         result = moderate_text_with_together(caption)
-        #st.warning(f"🛡️ Moderation Result: {result}")
         if "unsafe" in result.lower():
             st.warning(f"🛡️ Moderation Result: {result}")
             st.error("🚫 Text marked UNSAFE by LLaMA Guard")
