@@ -38,7 +38,7 @@ def load_blip():
 # Load LLaMA Guard model and tokenizer
 @st.cache_resource
 def load_llama_guard():
-    model_id = "meta-llama/Meta-Llama-Guard-2-7B"
+    model_id = "meta-llama/LlamaGuard-7b"
 
     # Load config and patch rope_scaling
     config = AutoConfig.from_pretrained(
