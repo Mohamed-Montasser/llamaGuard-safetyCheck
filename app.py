@@ -40,16 +40,21 @@ def load_blip():
 def load_llama_guard():
     model_id = "meta-llama/Llama-Guard-3-8B"
 
-    # Load and patch config
-    config = AutoConfig.from_pretrained(model_id, token=HF_TOKEN, trust_remote_code=True)
+    # Load config and patch rope_scaling
+    config = AutoConfig.from_pretrained(
+        model_id,
+        token=HF_TOKEN,
+        trust_remote_code=True
+    )
 
-    # Patch rope_scaling if needed
+    # Patch rope_scaling to avoid validation crash
     if isinstance(config.rope_scaling, dict):
         config.rope_scaling = {
-            "type": "linear",  # You can change to "dynamic" if needed
-            "factor": 8.0
+            "type": "linear",  # could be "dynamic" if specified by model card
+            "factor": config.rope_scaling.get("factor", 8.0)
         }
 
+    # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(
         model_id,
         token=HF_TOKEN,
@@ -57,6 +62,7 @@ def load_llama_guard():
         trust_remote_code=True
     )
 
+    # Load model with patched config
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         config=config,
@@ -66,11 +72,12 @@ def load_llama_guard():
         trust_remote_code=True
     )
 
-    # Set pad token if missing
+    # Ensure pad token is set
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
     return tokenizer, model
+
 
 # Captioning function
 def generate_caption(image, processor, model):
