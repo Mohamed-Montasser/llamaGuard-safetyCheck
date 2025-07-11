@@ -10,7 +10,7 @@ from transformers import (
 from huggingface_hub import login
 
 # Authenticate with your approved token
-login(token="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")
+login(token="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")
 
 # Set device
 device = "cuda" if torch.cuda.is_available() else "cpu"
