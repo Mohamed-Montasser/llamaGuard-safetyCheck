@@ -31,19 +31,39 @@ def load_blip():
 def load_llama_guard():
     model_id = "meta-llama/Llama-Guard-3-8B"
     
-    tokenizer = AutoTokenizer.from_pretrained(
+    # Load config first to handle Llama 3 specific settings
+    config = AutoConfig.from_pretrained(
         model_id,
-        token=True  # Uses the logged-in token
+        token=True
     )
     
+    # Fix for Llama 3's rope_scaling configuration
+    if hasattr(config, "rope_scaling"):
+        config.rope_scaling = {
+            "type": getattr(config.rope_scaling, "rope_type", "linear"),
+            "factor": getattr(config.rope_scaling, "factor", 1.0)
+        }
+    
+    # Load tokenizer with correct chat template
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_id,
+        token=True,
+        use_fast=True
+    )
+    
+    # Load model with fixed config
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
-        torch_dtype=dtype,
+        config=config,
+        torch_dtype=torch.float16,  # Use float16 for better performance
         device_map="auto",
         token=True
     )
+    
+    # Set appropriate generation config
+    model.generation_config.pad_token_id = tokenizer.eos_token_id
+    
     return tokenizer, model
-
 
 
 # Captioning function
