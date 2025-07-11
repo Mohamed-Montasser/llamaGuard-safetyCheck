@@ -81,7 +81,7 @@ def verify_with_distilbert(text):
 
 #  Streamlit UI 
 st.set_page_config(page_title="Caption + Moderation", layout="centered")
-st.title("🖼️ Image Captioning + 🛡️ Moderation with Together.ai")
+st.title("🖼️ Image Captioning + 🛡️ Moderation")
 
 processor, caption_model = load_blip()
 
