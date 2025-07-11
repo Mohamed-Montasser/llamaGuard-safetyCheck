@@ -105,7 +105,7 @@ if uploaded_file:
         else:
             st.warning(f"🛡️ Moderation Result: {result}")
             st.success("✅ Text marked safe by LLaMA Guard")
-            label = verify_with_distilbert(text_input)
+            label = verify_with_distilbert(caption)
             st.info(f"🔁 DistilBERT verification: {label}")
 
 # Manual Text Input
