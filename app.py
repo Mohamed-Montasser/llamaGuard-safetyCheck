@@ -9,21 +9,23 @@ from transformers import (
     AutoConfig
 )
 from huggingface_hub import login, HfFolder
-# Set your new token here
-HF_TOKEN = "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"  # Replace with your actual token
 
-# Proper authentication
+# 🔐 Hugging Face Token (Replace with your own valid token)
+HF_TOKEN = "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"
+
+# Authenticate with Hugging Face
 try:
     login(token=HF_TOKEN, add_to_git_credential=False)
-    HfFolder.save_token(HF_TOKEN)  # Persist token
+    HfFolder.save_token(HF_TOKEN)
 except Exception as e:
     st.error(f"Authentication failed: {str(e)}")
     st.stop()
-# Set device
+
+# Device configuration
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
 
-# Load BLIP model
+# Load BLIP model for image captioning
 @st.cache_resource
 def load_blip():
     processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
@@ -33,44 +35,41 @@ def load_blip():
     ).to(device)
     return processor, model
 
+# Load LLaMA Guard model and tokenizer
 @st.cache_resource
 def load_llama_guard():
     model_id = "meta-llama/Llama-Guard-3-8B"
-    
-    # Solution 1: Bypass config validation entirely
+
+    # Load and patch config
+    config = AutoConfig.from_pretrained(model_id, token=HF_TOKEN, trust_remote_code=True)
+
+    # Patch rope_scaling if needed
+    if isinstance(config.rope_scaling, dict):
+        config.rope_scaling = {
+            "type": "linear",  # You can change to "dynamic" if needed
+            "factor": 8.0
+        }
+
     tokenizer = AutoTokenizer.from_pretrained(
         model_id,
         token=HF_TOKEN,
-        use_fast=True
+        use_fast=True,
+        trust_remote_code=True
     )
-    
+
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
-        torch_dtype=torch.float16,
+        config=config,
+        torch_dtype=dtype,
         device_map="auto",
         token=HF_TOKEN,
-        ignore_mismatched_sizes=True  # This bypasses config validation
+        trust_remote_code=True
     )
-    
-    # Solution 2: Alternative approach with newer Transformers version
-    try:
-        # First try loading with standard approach
-        return tokenizer, model
-    except:
-        # Fallback to direct loading without config validation
-        from transformers import LlamaForCausalLM, LlamaTokenizer
-        tokenizer = LlamaTokenizer.from_pretrained(model_id, token=HF_TOKEN)
-        model = LlamaForCausalLM.from_pretrained(
-            model_id,
-            torch_dtype=torch.float16,
-            device_map="auto",
-            token=HF_TOKEN
-        )
-    
-    # Ensure proper tokenizer settings
+
+    # Set pad token if missing
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
-    
+
     return tokenizer, model
 
 # Captioning function
@@ -106,7 +105,7 @@ st.title("🖼️ Image Captioning + 🛡️ Safety Check with LLaMA Guard")
 processor, caption_model = load_blip()
 tokenizer, llama_guard_model = load_llama_guard()
 
-# Image upload
+# Image upload section
 st.subheader("📷 Upload an Image")
 uploaded_file = st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"])
 
@@ -121,7 +120,7 @@ if uploaded_file:
         result = moderate_text(caption, tokenizer, llama_guard_model)
         st.warning(f"🛡️ Moderation Result: {result}")
 
-# Text input
+# Text input moderation
 st.subheader("✍️ Or Enter Your Own Text")
 text_input = st.text_area("Enter text to check for safety")
 
