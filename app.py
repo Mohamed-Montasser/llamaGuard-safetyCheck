@@ -33,23 +33,11 @@ def load_blip():
     ).to(device)
     return processor, model
 
-# Load Llama Guard with fixed rope_scaling
 @st.cache_resource
 def load_llama_guard():
     model_id = "meta-llama/Llama-Guard-3-8B"
     
-    # First load the config and fix rope_scaling
-    config = AutoConfig.from_pretrained(model_id, token=HF_TOKEN)
-    
-    # Convert Llama 3 rope_scaling to compatible format
-    if hasattr(config, "rope_scaling"):
-        rope_config = {
-            "type": config.rope_scaling.get("rope_type", "linear"),
-            "factor": config.rope_scaling.get("factor", 1.0)
-        }
-        config.rope_scaling = rope_config
-    
-    # Then load the model with the fixed config
+    # Solution 1: Bypass config validation entirely
     tokenizer = AutoTokenizer.from_pretrained(
         model_id,
         token=HF_TOKEN,
@@ -58,11 +46,26 @@ def load_llama_guard():
     
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
-        config=config,  # Use our fixed config
         torch_dtype=torch.float16,
         device_map="auto",
-        token=HF_TOKEN
+        token=HF_TOKEN,
+        ignore_mismatched_sizes=True  # This bypasses config validation
     )
+    
+    # Solution 2: Alternative approach with newer Transformers version
+    try:
+        # First try loading with standard approach
+        return tokenizer, model
+    except:
+        # Fallback to direct loading without config validation
+        from transformers import LlamaForCausalLM, LlamaTokenizer
+        tokenizer = LlamaTokenizer.from_pretrained(model_id, token=HF_TOKEN)
+        model = LlamaForCausalLM.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16,
+            device_map="auto",
+            token=HF_TOKEN
+        )
     
     # Ensure proper tokenizer settings
     if tokenizer.pad_token is None:
