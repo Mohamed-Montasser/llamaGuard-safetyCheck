@@ -38,28 +38,37 @@ def load_blip():
 def load_llama_guard():
     model_id = "meta-llama/Llama-Guard-3-8B"
     
-    try:
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_id,
-            token=HF_TOKEN,
-            use_fast=True
-        )
-        
-        model = AutoModelForCausalLM.from_pretrained(
-            model_id,
-            torch_dtype=torch.float16,
-            device_map="auto",
-            token=HF_TOKEN
-        )
-        
-        if tokenizer.pad_token is None:
-            tokenizer.pad_token = tokenizer.eos_token
-            
-        return tokenizer, model
-        
-    except Exception as e:
-        st.error(f"Model loading failed: {str(e)}")
-        st.stop()
+    # First load the config and fix rope_scaling
+    config = AutoConfig.from_pretrained(model_id, token=HF_TOKEN)
+    
+    # Convert Llama 3 rope_scaling to compatible format
+    if hasattr(config, "rope_scaling"):
+        rope_config = {
+            "type": config.rope_scaling.get("rope_type", "linear"),
+            "factor": config.rope_scaling.get("factor", 1.0)
+        }
+        config.rope_scaling = rope_config
+    
+    # Then load the model with the fixed config
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_id,
+        token=HF_TOKEN,
+        use_fast=True
+    )
+    
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        config=config,  # Use our fixed config
+        torch_dtype=torch.float16,
+        device_map="auto",
+        token=HF_TOKEN
+    )
+    
+    # Ensure proper tokenizer settings
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    
+    return tokenizer, model
 
 # Captioning function
 def generate_caption(image, processor, model):
