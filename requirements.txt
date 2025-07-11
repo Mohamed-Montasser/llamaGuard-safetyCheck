@@ -1,5 +1,6 @@
 transformers==4.41.1
-torch
-streamlit
-Pillow
-huggingface_hub
+torch==2.3.0
+streamlit==1.34.0
+Pillow==10.3.0
+huggingface_hub==0.23.1
+tokenizers==0.15.2
