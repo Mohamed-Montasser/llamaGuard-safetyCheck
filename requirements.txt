@@ -5,3 +5,5 @@ Pillow
 huggingface_hub
 accelerate>=0.21.0
 together
+onnxruntime
+scikit-learn
