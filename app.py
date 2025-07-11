@@ -8,8 +8,8 @@ import os
 from huggingface_hub import hf_hub_download
 from transformers import BertTokenizer
 import onnxruntime as ort
-import pickle
 import numpy as np
+import joblib
 
 # Constants
 REPO_ID = "M-Montasser/finetuned-distilbert"
@@ -25,8 +25,7 @@ tokenizer = BertTokenizer.from_pretrained(REPO_ID)
 session = ort.InferenceSession(model_path)
 
 # Load Label Encoder
-with open(encoder_path, "rb") as f:
-    label_encoder = pickle.load(f)
+label_encoder = joblib.load(encoder_path)
 
 
 # 🔐 Together.ai API key (set securely in your env, not hardcoded)
