@@ -29,7 +29,7 @@ def load_blip():
 # Load Llama Guard with proper authentication
 @st.cache_resource
 def load_llama_guard():
-    model_id = "meta-llama/Meta-Llama-Guard-2-8B"
+    model_id = "meta-llama/Llama-Guard-3-8B"
     
     tokenizer = AutoTokenizer.from_pretrained(
         model_id,
