@@ -26,32 +26,32 @@ def load_blip():
 @st.cache_resource
 def load_llama_guard():
     model_id = "meta-llama/Meta-Llama-Guard-2-8B"
-    
-    # Ensure you're using a Hugging Face token with access to this model
-    # Also add `use_auth_token=True` explicitly
+    hf_token = "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"
+
     tokenizer = AutoTokenizer.from_pretrained(
         model_id,
-        use_fast=True,
-        token="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",  # Replace with your token
-        use_auth_token="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"
+        use_fast=False,  # safer for LLaMA models
+        token=hf_token,
+        trust_remote_code=True
     )
 
     config = AutoModelForCausalLM.from_pretrained(
         model_id,
-        token="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",
+        token=hf_token,
         trust_remote_code=True
     ).config
 
+    # Patch rope_scaling if necessary
     if not hasattr(config, "rope_scaling"):
-        config.rope_scaling = None  # Prevent RoPE scaling validation crash
+        config.rope_scaling = None
 
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         config=config,
         torch_dtype=torch.float16,
         device_map="auto",
-        token="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",
-        use_auth_token="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"
+        token=hf_token,
+        trust_remote_code=True
     )
 
     return tokenizer, model
