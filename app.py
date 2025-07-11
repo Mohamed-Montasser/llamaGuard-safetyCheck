@@ -7,9 +7,10 @@ from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM
 )
-import io
 from huggingface_hub import login
-login("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")
+
+# Authenticate with your approved token
+login(token="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")
 
 # Set device
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -19,36 +20,27 @@ dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32
 @st.cache_resource
 def load_blip():
     processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-    model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to(device)
+    model = BlipForConditionalGeneration.from_pretrained(
+        "Salesforce/blip-image-captioning-base",
+        torch_dtype=dtype
+    ).to(device)
     return processor, model
 
-# Load Llama Guard
+# Load Llama Guard with proper authentication
 @st.cache_resource
 def load_llama_guard():
     model_id = "meta-llama/Meta-Llama-Guard-2-8B"
-    token = "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"
     
     tokenizer = AutoTokenizer.from_pretrained(
         model_id,
-        use_fast=True,
-        use_auth_token=token  # ✅ use_auth_token, not token
+        token=True  # Uses the logged-in token
     )
-    
-    config = AutoModelForCausalLM.from_pretrained(
-        model_id,
-        trust_remote_code=True,
-        use_auth_token=token
-    ).config
-    
-    if not hasattr(config, "rope_scaling"):
-        config.rope_scaling = None
     
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
-        config=config,
-        torch_dtype=torch.float16,
+        torch_dtype=dtype,
         device_map="auto",
-        use_auth_token=token
+        token=True
     )
     return tokenizer, model
 
