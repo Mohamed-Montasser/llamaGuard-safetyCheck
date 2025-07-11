@@ -5,7 +5,8 @@ from transformers import (
     BlipProcessor,
     BlipForConditionalGeneration,
     AutoTokenizer,
-    AutoModelForCausalLM
+    AutoModelForCausalLM,
+    AutoConfig
 )
 from huggingface_hub import login
 
