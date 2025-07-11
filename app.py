@@ -9,9 +9,9 @@ from transformers import (
     AutoConfig
 )
 from huggingface_hub import login, HfFolder
-
+# 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
 # 🔐 Hugging Face Token (Replace with your own valid token)
-HF_TOKEN = "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"
+HF_TOKEN = "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"
 
 # Authenticate with Hugging Face
 try:
@@ -38,7 +38,7 @@ def load_blip():
 # Load LLaMA Guard model and tokenizer
 @st.cache_resource
 def load_llama_guard():
-    model_id = "meta-llama/Llama-Guard-3-8B"
+    model_id = "meta-llama/Meta-Llama-Guard-2-7B"
 
     # Load config and patch rope_scaling
     config = AutoConfig.from_pretrained(
@@ -55,22 +55,9 @@ def load_llama_guard():
         }
 
     # Load tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_id,
-        token=HF_TOKEN,
-        use_fast=True,
-        trust_remote_code=True
-    )
+    tokenizer = AutoTokenizer.from_pretrained(model_id, token=HF_TOKEN, use_fast=True)
+    model = AutoModelForCausalLM.from_pretrained(model_id, token=HF_TOKEN, device_map="auto", torch_dtype=torch.float16)
 
-    # Load model with patched config
-    model = AutoModelForCausalLM.from_pretrained(
-        model_id,
-        config=config,
-        torch_dtype=dtype,
-        device_map="auto",
-        token=HF_TOKEN,
-        trust_remote_code=True
-    )
 
     # Ensure pad token is set
     if tokenizer.pad_token is None:
