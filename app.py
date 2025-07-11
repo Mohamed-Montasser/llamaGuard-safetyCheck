@@ -6,9 +6,9 @@ from together import Together
 
 # 🔐 Together.ai API key (set securely in your env, not hardcoded)
 #TOGETHER_API_KEY = "08e51872d0f3ce01af96b278da8f1f7757e485f71237501ecf42e8cab4661bb8"  # Replace this with your real key
-
+os.environ["TOGETHER_API_KEY"] = st.secrets["TOGETHER_API_KEY"]
 # Initialize Together.ai client
-client = Together(api_key=st.secrets["TOGETHER_API_KEY"])# Set device
+client = Together()# Set device
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32
 
