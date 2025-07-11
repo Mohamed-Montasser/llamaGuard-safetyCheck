@@ -38,6 +38,12 @@ This is a **Streamlit web app** that performs:
 
 This custom DistilBERT model checks whether the caption is **safe** or **unsafe** using ONNX for fast CPU/GPU inference.
 
+---
+
+## 🌐 Live Demo
+
+Check out the app live here: [🔗 llamaguard-safetycheck.streamlit.app](https://llamaguard-safetycheck.streamlit.app/)
+
 ## ✍️ Author
 
 **Mohamed Montasser**  
