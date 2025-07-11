@@ -5,6 +5,30 @@ from transformers import BlipProcessor, BlipForConditionalGeneration
 from together import Together
 import os
 
+from huggingface_hub import hf_hub_download
+from transformers import BertTokenizer
+import onnxruntime as ort
+import pickle
+import numpy as np
+
+# Constants
+REPO_ID = "M-Montasser/finetuned-distilbert"
+MODEL_FILENAME = "model.onnx"
+ENCODER_FILENAME = "label_encoder.pkl"
+
+# Download files directly from Hugging Face Hub
+model_path = hf_hub_download(repo_id=REPO_ID, filename=MODEL_FILENAME)
+encoder_path = hf_hub_download(repo_id=REPO_ID, filename=ENCODER_FILENAME)
+tokenizer = BertTokenizer.from_pretrained(REPO_ID)
+
+# Load ONNX model
+session = ort.InferenceSession(model_path)
+
+# Load Label Encoder
+with open(encoder_path, "rb") as f:
+    label_encoder = pickle.load(f)
+
+
 # 🔐 Together.ai API key (set securely in your env, not hardcoded)
 #TOGETHER_API_KEY = "08e51872d0f3ce01af96b278da8f1f7757e485f71237501ecf42e8cab4661bb8"  # Replace this with your real key
 os.environ["TOGETHER_API_KEY"] = st.secrets["TOGETHER_API_KEY"]
@@ -37,6 +61,27 @@ def moderate_text_with_together(text):
     )
     return response.choices[0].message.content
 
+
+def verify_with_distilbert(text):
+    tokens = tokenizer(
+        text,
+        padding="max_length",
+        truncation=True,
+        max_length=128,
+        return_tensors="np"
+    )
+
+    ort_inputs = {
+        "input_ids": tokens["input_ids"],
+        "attention_mask": tokens["attention_mask"]
+    }
+
+    logits = session.run(None, ort_inputs)[0]
+    predicted_class = np.argmax(logits, axis=1)
+    label = label_encoder.inverse_transform(predicted_class)[0]
+    return label
+
+
 # ───────────── Streamlit UI ─────────────
 st.set_page_config(page_title="Caption + Moderation", layout="centered")
 st.title("🖼️ Image Captioning + 🛡️ Moderation with Together.ai")
@@ -64,3 +109,9 @@ text_input = st.text_area("Enter text to check for safety")
 if text_input and st.button("🔍 Moderate Text"):
     result = moderate_text_with_together(text_input)
     st.warning(f"🛡️ Moderation Result: {result}")
+    if "unsafe" in result.lower():
+        label = verify_with_distilbert(text_input)
+        st.info(f"🔁 DistilBERT verification: {label}")
+    else:
+        st.success("✅ Text marked safe by LLaMA Guard")
+
