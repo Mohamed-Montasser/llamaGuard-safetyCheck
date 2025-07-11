@@ -108,7 +108,7 @@ text_input = st.text_area("Enter text to check for safety")
 if text_input and st.button("🔍 Moderate Text"):
     result = moderate_text_with_together(text_input)
     st.warning(f"🛡️ Moderation Result: {result}")
-    if "unsafe" in result.lower():
+    if "safe" == result.lower():
         label = verify_with_distilbert(text_input)
         st.info(f"🔁 DistilBERT verification: {label}")
     else:
