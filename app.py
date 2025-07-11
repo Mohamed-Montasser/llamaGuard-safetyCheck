@@ -102,6 +102,7 @@ if uploaded_file:
         #st.warning(f"🛡️ Moderation Result: {result}")
         if "unsafe" in result.lower():
             st.warning(f"🛡️ Moderation Result: {result}")
+            st.error("🚫 Text marked UNSAFE by LLaMA Guard")
         else:
             st.warning(f"🛡️ Moderation Result: {result}")
             st.success("✅ Text marked safe by LLaMA Guard")
@@ -116,6 +117,8 @@ if text_input and st.button("🔍 Moderate Text"):
     result = moderate_text_with_together(text_input)
     if "unsafe" in result.lower():
         st.warning(f"🛡️ Moderation Result: {result}")
+        st.error("🚫 Text marked UNSAFE by LLaMA Guard")
+
     else:
         st.warning(f"🛡️ Moderation Result: {result}")
         st.success("✅ Text marked safe by LLaMA Guard")
