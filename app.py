@@ -32,38 +32,43 @@ def load_blip():
 def load_llama_guard():
     model_id = "meta-llama/Llama-Guard-3-8B"
     
-    # Load and fix config
+    # Load config and simplify rope_scaling
     config = AutoConfig.from_pretrained(model_id, token=True)
     
-    # Convert Llama 3 rope_scaling to compatible format
     if hasattr(config, "rope_scaling"):
+        # Convert Llama 3's extended rope_scaling to basic format
         config.rope_scaling = {
             "type": config.rope_scaling.get("rope_type", "linear"),
             "factor": config.rope_scaling.get("factor", 1.0)
         }
+        # Remove incompatible attributes
+        for attr in ['low_freq_factor', 'high_freq_factor', 
+                    'original_max_position_embeddings']:
+            if hasattr(config.rope_scaling, attr):
+                delattr(config.rope_scaling, attr)
     
-    # Load tokenizer
+    # Load tokenizer with chat template
     tokenizer = AutoTokenizer.from_pretrained(
         model_id,
         token=True,
         use_fast=True
     )
     
-    # Load model with fixed config
+    # Load model with cleaned config
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         config=config,
-        torch_dtype=dtype,
+        torch_dtype=torch.float16,
         device_map="auto",
         token=True
     )
     
-    # Ensure tokenizer has pad token
+    # Ensure proper tokenizer settings
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+    model.config.pad_token_id = tokenizer.pad_token_id
     
     return tokenizer, model
-
 
 # Captioning function
 def generate_caption(image, processor, model):
