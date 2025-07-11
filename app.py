@@ -8,7 +8,6 @@ from transformers import (
     AutoModelForCausalLM
 )
 import io
-
 from huggingface_hub import login
 login("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")
 
@@ -26,10 +25,23 @@ def load_blip():
 # Load Llama Guard
 @st.cache_resource
 def load_llama_guard():
-    model_id = "meta-llama/Llama-Guard-3-8B"
-    tokenizer = AutoTokenizer.from_pretrained(model_id, token=True)
-    model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=dtype, device_map="auto", token=True)
+    model_id = "meta-llama/Meta-Llama-Guard-2-8B"  # or whichever variant you're using
+    tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True)
+
+    # optional: avoid rope_scaling error by patching config before loading
+    config = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True).config
+    if not hasattr(config, "rope_scaling"):
+        config.rope_scaling = None  # patch to avoid validation crash
+
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        config=config,
+        torch_dtype=torch.float16,
+        device_map="auto"
+    )
+
     return tokenizer, model
+
 
 # Captioning function
 def generate_caption(image, processor, model):
@@ -41,7 +53,7 @@ def generate_caption(image, processor, model):
 # Moderation function
 def moderate_text(text, tokenizer, model):
     chat = [{"role": "user", "content": text}]
-    input_ids = tokenizer.apply_chat_template(chat, return_tensors="pt").to(device)
+    input_ids = tokenizer.apply_chat_template(chat, return_tensors="pt", tokenize=True).to(device)
 
     pad_token_id = tokenizer.pad_token_id or tokenizer.eos_token_id
     attention_mask = (input_ids != pad_token_id).long().to(device)
