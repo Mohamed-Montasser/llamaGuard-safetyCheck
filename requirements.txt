@@ -4,3 +4,4 @@ streamlit
 Pillow
 huggingface_hub
 accelerate>=0.21.0
+together==0.2.11
