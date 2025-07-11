@@ -10,12 +10,12 @@ from transformers import (
 )
 from huggingface_hub import login
 
-# Authenticate with your approved token
-login(token="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")
+# Initialize Hugging Face login
+login(token="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")
 
 # Set device
 device = "cuda" if torch.cuda.is_available() else "cpu"
-dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32
+dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
 
 # Load BLIP model
 @st.cache_resource
@@ -27,25 +27,22 @@ def load_blip():
     ).to(device)
     return processor, model
 
-# Load Llama Guard with proper authentication
+# Load Llama Guard with fixed rope_scaling
 @st.cache_resource
 def load_llama_guard():
     model_id = "meta-llama/Llama-Guard-3-8B"
     
-    # Load config first to handle Llama 3 specific settings
-    config = AutoConfig.from_pretrained(
-        model_id,
-        token=True
-    )
+    # Load and fix config
+    config = AutoConfig.from_pretrained(model_id, token=True)
     
-    # Fix for Llama 3's rope_scaling configuration
+    # Convert Llama 3 rope_scaling to compatible format
     if hasattr(config, "rope_scaling"):
         config.rope_scaling = {
-            "type": getattr(config.rope_scaling, "rope_type", "linear"),
-            "factor": getattr(config.rope_scaling, "factor", 1.0)
+            "type": config.rope_scaling.get("rope_type", "linear"),
+            "factor": config.rope_scaling.get("factor", 1.0)
         }
     
-    # Load tokenizer with correct chat template
+    # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(
         model_id,
         token=True,
@@ -56,13 +53,14 @@ def load_llama_guard():
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         config=config,
-        torch_dtype=torch.float16,  # Use float16 for better performance
+        torch_dtype=dtype,
         device_map="auto",
         token=True
     )
     
-    # Set appropriate generation config
-    model.generation_config.pad_token_id = tokenizer.eos_token_id
+    # Ensure tokenizer has pad token
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
     
     return tokenizer, model
 
